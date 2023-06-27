@@ -36,7 +36,7 @@ async function handle(req) {
     if (what.startsWith("ws")) {
       log.d("ws: connect", addr);
       const sock = await mksocket(addr);
-      return ws.pipe(req, sock);
+      return ws.accept(sock);
     } else if (what.startsWith("h2")) {
       log.d("pipe: connect", addr);
       const sock = await mksocket(addr);
