@@ -126,7 +126,8 @@ function setup(websocket) {
     yes();
   });
   websocket.addEventListener("error", (event) => {
-    log.e("ws: error", event);
+    log.d("ws: err event?", event != null, "t?", timer != null);
+    if (event != null) log.e("ws: error", event.message, event.error);
     // no() has no effect if yes() has already been called
     if (timer) clearTimeout(timer);
     timer = null;
