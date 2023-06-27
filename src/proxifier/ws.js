@@ -116,7 +116,7 @@ function setup(websocket) {
   const promise = new Promise((resolve, reject) => {
     yes = resolve.bind(this);
     no = reject.bind(this);
-    timer = setTimeout(no, cfg.wsConnTimeoutMs);
+    timer = setTimeout(() => no("timeout"), cfg.wsConnTimeoutMs);
   });
   // developer.mozilla.org/en-US/docs/Web/API/WebSocket
   websocket.addEventListener("open", (event) => {
