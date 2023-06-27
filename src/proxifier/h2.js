@@ -32,7 +32,7 @@ export async function echo(socket) {
  * @param {Request} req
  * @param {TransformStream} egress
  * @param {function(Promise)} waiter
- * @returns {Response}
+ * @returns {Promise<Response>}
  */
 export async function pipe(req, egress, waiter = (p) => p) {
   // ingress is null when request is GET or HEAD
