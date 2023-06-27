@@ -106,6 +106,12 @@ async function duplex(websocket) {
  * @returns {Promise<void>}
  */
 function setup(websocket) {
+  // developers.cloudflare.com/workers/platform/compatibility-dates/#global-navigator
+  if (navigator.userAgent === "Cloudflare-Workers") {
+    // on workers, open never gets called, so skip
+    return Promise.resolve();
+  }
+
   let yes, no, timer;
   const promise = new Promise((resolve, reject) => {
     yes = resolve.bind(this);
