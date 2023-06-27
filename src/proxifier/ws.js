@@ -40,10 +40,10 @@ export async function pipe(ingress, egress, waiter = (p) => p) {
   try {
     // 1. pipe without await
     // 2. do not close egress on completion
-    waiter(ingress.readable.pipeTo(egress.writable, { preventClose: true }));
+    waiter(ingress.readable.pipeTo(egress.writable));
     // stream the response out
     // blog.cloudflare.com/workers-optimization-reduces-your-bill
-    waiter(egress.readable.pipeTo(ingress.writable, { preventClose: true }));
+    waiter(egress.readable.pipeTo(ingress.writable));
   } catch (ex) {
     log.e("pipe: err", ex);
     return modres.r500;
