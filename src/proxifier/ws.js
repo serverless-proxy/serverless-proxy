@@ -18,16 +18,19 @@ export function isWs(req) {
  * @param {TransformStream} egress
  * @param {function(Promise)} waiter
  */
-export function accept(egress, waiter = (p) => p) {
+export async function accept(egress, waiter = (p) => p) {
+  // github.com/cloudflare/websocket-template/blob/main/index.js
   // developers.cloudflare.com/workers/learning/using-websockets
   const [client, server] = Object.values(new WebSocketPair());
+
   server.accept();
-  // github.com/cloudflare/websocket-template/blob/main/index.js
-  pipe(duplex(server), egress, waiter);
-  return Response(null, {
-    status: 101,
-    webSocket: client,
-  });
+  const ingress = await duplex(server);
+  log.d("ws: accept: eg? ing?", egress != null, ingress != null);
+  if (ingress) {
+    pipe(ingress, egress, waiter);
+    return new Response(null, { status: 101, webSocket: client });
+  }
+  return modres.r500;
 }
 
 /**
@@ -52,15 +55,21 @@ export async function pipe(ingress, egress, waiter = (p) => p) {
 
 /**
  * @param {WebSocket} websocket
- * @returns {{r: ReadableStream, w: WritableStream}}
+ * @returns {Promise<{readable: ReadableStream, writable: WritableStream}>}
  */
-function duplex(websocket) {
-  const ok = setup(websocket);
+async function duplex(websocket) {
+  try {
+    // open never gets called; skip setup on Workers
+    await setup(websocket);
+  } catch (ex) {
+    log.e("ws: duplex err", ex);
+    return null;
+  }
   // developer.mozilla.org/en-US/docs/Web/API/ReadableStream/ReadableStream
   const r = new ReadableStream({
-    async start(rctl) {
-      await ok;
+    start(rctl) {
       chain(websocket, rctl);
+      log.d("ws: readable started");
     },
     cancel(reason) {
       close(websocket, 1014, reason);
@@ -69,13 +78,15 @@ function duplex(websocket) {
 
   // developer.mozilla.org/en-US/docs/Web/API/WritableStream/WritableStream
   const w = new WritableStream({
-    async start(wctl) {
-      return await ok;
+    start(wctl) {
+      log.d("ws: writable started");
     },
-    async write(chunk, wctl) {
+    write(chunk, wctl) {
+      const ok = wsok(websocket);
+      log.d("ws: write?", ok, "d?", chunk != null, "ctl?", wctl != null);
       // developer.mozilla.org/en-US/docs/Web/API/WritableStreamDefaultController
-      if (wsok(websocket)) websocket.send(chunk);
-      else wctl.error("websocket closed");
+      if (ok) websocket.send(chunk);
+      else if (wctl) wctl.error("websocket closed");
     },
     close(wctl) {
       close(websocket, 1000, "remote closed");
