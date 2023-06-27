@@ -5,6 +5,7 @@ export const debug = true;
 // echo udp/tcp server
 // echo "hello" | nc midway.fly.dev 5001
 export const echoServerAddr = { hostname: "midway.fly.dev", port: 5001 };
+export const g204Url = "https://static.googleusercontent.com/generate_204";
 export const tcpOpts = { secureTransport: "off", allowHalfOpen: true };
 export const h2header = {
   "Content-Type": "application/octet-stream",

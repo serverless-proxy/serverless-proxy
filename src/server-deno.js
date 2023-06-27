@@ -17,9 +17,20 @@ serve(handle);
  * @returns {Response}
  */
 async function handle(req) {
+  log.d("fetch: serving", req.url);
   const u = new URL(req.url);
-
   const [what, addr] = svc.intent(u);
+
+  if (what.startsWith("yo")) {
+    log.d("svc: test");
+    return svc.tester(req, addr.hostname);
+  }
+
+  const authres = await svc.allow(req, env, ctx);
+  if (authres !== auth.ok) {
+    log.d("auth failed");
+    return modres.r503;
+  }
 
   try {
     if (what.startsWith("ws")) {

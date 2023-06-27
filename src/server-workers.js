@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2023 RethinkDNS and its authors
+
 import * as auth from "./base/auth.js";
 import * as net from "cloudflare:sockets";
 import * as cfg from "./base/cfg.js";
@@ -11,15 +12,22 @@ import * as log from "./base/log.js";
 
 export default {
   async fetch(req, env, ctx) {
-    const authres = await svc.allow(req, env, ctx);
-    if (authres !== auth.ok) {
-      log.d("auth failed");
-      return modres.r503;
-    }
-
+    log.d("fetch: serving", req.url);
     const dispatch = ctx.waitUntil.bind(ctx);
     const u = new URL(req.url);
     const [what, addr] = svc.intent(u);
+
+
+    if (what.startsWith("yo")) {
+      log.d("svc: test");
+      return svc.tester(req, addr.hostname);
+    }
+
+    const authres = await svc.allow(req, env, ctx);
+    if (authres !== auth.ok) {
+      log.d("auth: failed");
+      return modres.r503;
+    }
 
     try {
       if (what.startsWith("ws")) {
