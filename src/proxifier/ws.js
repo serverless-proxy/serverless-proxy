@@ -120,15 +120,17 @@ function setup(websocket) {
   });
   // developer.mozilla.org/en-US/docs/Web/API/WebSocket
   websocket.addEventListener("open", (event) => {
-    log.d("ws: open", event);
-    clearTimeout(timer);
+    log.d("ws: open", event != null, yes, timer);
+    if (timer) clearTimeout(timer);
+    timer = null;
     yes();
   });
   websocket.addEventListener("error", (event) => {
     log.e("ws: error", event);
     // no() has no effect if yes() has already been called
-    clearTimeout(timer);
-    no();
+    if (timer) clearTimeout(timer);
+    timer = null;
+    no(event.message);
   });
   return promise;
 }
