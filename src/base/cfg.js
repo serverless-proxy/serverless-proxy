@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2023 RethinkDNS and its authors
 
-export const debug = true;
+export const debug = false;
 // echo udp/tcp server
 // echo "hello" | nc midway.fly.dev 5001
 export const echoServerAddr = { hostname: "midway.fly.dev", port: 5001 };
