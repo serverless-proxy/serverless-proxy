@@ -25,11 +25,14 @@ export async function accept(egress, waiter = (p) => p) {
 
   server.accept();
   const ingress = await duplex(server);
+
   log.d("ws: accept: eg? ing?", egress != null, ingress != null);
+
   if (ingress) {
     pipe(ingress, egress, waiter);
     return new Response(null, { status: 101, webSocket: client });
   }
+
   return modres.r500;
 }
 
@@ -37,20 +40,22 @@ export async function accept(egress, waiter = (p) => p) {
  * @param {TransformStream} ingress
  * @param {TransformStream} egress
  * @param {function(Promise)} waiter
- * @returns {Response}
  */
-export async function pipe(ingress, egress, waiter = (p) => p) {
-  try {
-    // 1. pipe without await
-    // 2. do not close egress on completion
-    waiter(ingress.readable.pipeTo(egress.writable));
-    // stream the response out
-    // blog.cloudflare.com/workers-optimization-reduces-your-bill
-    waiter(egress.readable.pipeTo(ingress.writable));
-  } catch (ex) {
-    log.e("pipe: err", ex);
-    return modres.r500;
-  }
+export function pipe(ingress, egress, waiter = (p) => p) {
+  // 1. pipe without await
+  // 2. do not close egress on completion
+  waiter(
+    ingress.readable
+      .pipeTo(egress.writable)
+      .catch((ex) => log.e("pipe: in2out err", ex.message))
+  );
+  // stream the response out
+  // blog.cloudflare.com/workers-optimization-reduces-your-bill
+  waiter(
+    egress.readable
+      .pipeTo(ingress.writable)
+      .catch((ex) => log.e("pipe: out2in", ex.message))
+  );
 }
 
 /**
