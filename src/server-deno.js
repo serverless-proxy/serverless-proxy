@@ -34,6 +34,9 @@ async function handle(req) {
 
   try {
     if (what.startsWith("ws")) {
+      if (!ws.isWs(req)) {
+        return modres.r426();
+      }
       log.d("ws: connect", addr);
       const sock = await mksocket(addr);
       return ws.accept(sock);

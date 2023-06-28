@@ -32,7 +32,7 @@ export default {
     try {
       if (what.startsWith("ws")) {
         if (!ws.isWs(req)) {
-          return new modres.r426();
+          return modres.r426();
         }
         log.d("ws: connect", addr);
         const sock = mksocket(addr);
