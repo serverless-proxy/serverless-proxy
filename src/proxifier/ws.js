@@ -64,7 +64,6 @@ export function pipe(ingress, egress, waiter = (p) => p) {
  */
 async function duplex(websocket) {
   try {
-    // open never gets called; skip setup on Workers
     await setup(websocket);
   } catch (ex) {
     log.e("ws: duplex err", ex);
@@ -117,6 +116,7 @@ function setup(websocket) {
     return Promise.resolve();
   }
 
+  log.d("ws: wait until open");
   let yes, no, timer;
   const promise = new Promise((resolve, reject) => {
     yes = resolve.bind(this);
@@ -131,7 +131,7 @@ function setup(websocket) {
     yes();
   });
   websocket.addEventListener("error", (event) => {
-    log.d("ws: err event?", event != null, "t?", timer != null);
+    // log.d("ws: err event?", event != null, "t?", timer != null);
     if (event != null) log.e("ws: error", event.message, event.error);
     // no() has no effect if yes() has already been called
     if (timer) clearTimeout(timer);
@@ -162,7 +162,7 @@ function chain(websocket, reader) {
   });
   // developer.mozilla.org/en-US/docs/Web/API/WebSocket/error_event
   websocket.addEventListener("error", (event) => {
-    log.e("ws: err", event != null);
+    log.e("ws: err", event.message);
     reader.error(event);
   });
 }
