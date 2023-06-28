@@ -157,7 +157,7 @@ function chain(websocket, reader) {
   websocket.addEventListener("close", (why) => {
     const { code, reason, wasClean } = why;
     log.d("ws: close", code, reason, "clean?", wasClean);
-    // close(websocket, code, reason);
+    close(websocket, code, reason);
     reader.close();
   });
   // developer.mozilla.org/en-US/docs/Web/API/WebSocket/error_event
