@@ -12,7 +12,8 @@ import * as log from "./base/log.js";
 
 export default {
   async fetch(req, env, ctx) {
-    log.d("fetch: serving", req.url);
+    log.key(env.LOG_LEVEL);
+    log.d(env.LOG_LEVEL, "fetch: serving", req.url);
     const dispatch = ctx.waitUntil.bind(ctx);
     const u = new URL(req.url);
     const [what, addr] = svc.intent(u);
