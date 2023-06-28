@@ -57,9 +57,9 @@ func main() {
 		doneCh <- 0
 	}()
 
-	log.Print("waiting...")
+	log.Println("waiting...")
 	<-doneCh
-	log.Print("fin")
+	log.Println("fin")
 }
 
 func dialws(ctx context.Context, client *http.Client, rurl string) (c net.Conn, err error) {
