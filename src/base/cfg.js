@@ -25,3 +25,5 @@ export const authContext = "per-client-pip-key";
 export const upgradeHeader = "Upgrade";
 // connection timeout for websockets; unused on workers
 export const wsConnTimeoutMs = 10000;
+// use ctx.waitUntil() to wait for websockets rw streams to close
+export const useWaiter = true;

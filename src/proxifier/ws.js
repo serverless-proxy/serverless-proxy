@@ -29,6 +29,7 @@ export async function accept(egress, waiter = (p) => p) {
   log.d("ws: accept: eg? ing?", egress != null, ingress != null);
 
   if (ingress) {
+    waiter = cfg.useWaiter ? waiter : null;
     pipe(ingress, egress, waiter);
     return new Response(null, { status: 101, webSocket: client });
   }
