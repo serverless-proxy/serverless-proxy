@@ -151,7 +151,7 @@ function chain(websocket, reader) {
   websocket.addEventListener("message", (what) => {
     const { data, type } = what;
     log.d("ws: recv", data, type);
-    reader.enqueue(data);
+    if (data) reader.enqueue(data);
   });
   // developer.mozilla.org/en-US/docs/Web/API/WebSocket/close_event
   websocket.addEventListener("close", (why) => {
