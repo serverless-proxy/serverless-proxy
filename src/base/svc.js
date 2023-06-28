@@ -22,7 +22,7 @@ export function intent(u) {
   }
 
   const w = p[1];
-  const dst = p[2];
+  let dst = p[2];
   if (w === "yo") {
     dst = dst || cfg.g204Url;
   } else if (!dst) {
