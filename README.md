@@ -4,13 +4,13 @@ _serverless-proxy_ is a serverless WebSockets and HTTP2 to TCP proxy. Runs out-o
 
 ## Transport
 
-`h2.js`, pipes the incoming _readable_ `Request.body` stream from the client to the outgoing _writable_ stream of a TCP socket (created via [`cloudflare:socket`](https://developers.cloudflare.com/workers/runtime-apis/tcp-sockets) or [`Deno.connect`](https://doc.deno.land/deno/stable/~/Deno.connect) API) to a client-specified destination. The _readable_ stream of the destination socket is piped on via `Response.body` to the client.
+`h2.js`, pipes the incoming _readable_ `Request.body` stream from the client to the outgoing _writable_ stream of a TCP socket (created via [cloudflare:socket](https://developers.cloudflare.com/workers/runtime-apis/tcp-sockets) or [Deno.connect](https://doc.deno.land/deno/stable/~/Deno.connect)) to a client-specified destination. The _readable_ stream of the destination socket is piped on via `Response.body` back to the client.
 
-`ws.js` transforms WebSockets events into _readable_ (via `WebSocket.onmessage`) and _writable_ (`WebSocket.send`) streams. The _readable_ part of the WebSocket is piped into outgoing _writable_ stream of a TCP socket to a client-specified destination (as above), whilst the _writable_ part is piped into the _readable_ stream of the TCP socket.
+`ws.js` transforms WebSockets events into _readable_ (via `WebSocket.onmessage`) and _writable_ (`WebSocket.send`) streams. The _readable_ side of the WebSocket is piped into the outgoing _writable_ stream of the TCP socket to a client-specified destination (as above), whilst the _writable_ side of the WebSocket is piped into the _readable_ stream of the TCP socket.
 
-The transport and destination are conveyed by the client via the URL. This means, no multiplexing, ie one destination per h2 / ws connection. Not multiplexing on top of doing TCP-in-TCP is really poor, but we'll endure until a better alternative presents itself (like QUIC, specifically [MASQUE](https://blog.cloudflare.com/building-privacy-into-internet-standards-and-how-to-make-your-app-more-private-today/), for example).
+The transport and destination are conveyed by the client via the URL. This means, no multiplexing, ie *one* destination per h2 / ws connection. Not multiplexing on top of doing [TCP-in-TCP is really poor](https://sshuttle.readthedocs.io/en/stable/how-it-works.html), but we'll endure until a better alternative presents itself (like QUIC, specifically [MASQUE](https://blog.cloudflare.com/building-privacy-into-internet-standards-and-how-to-make-your-app-more-private-today/), for example).
 
-In terms of existing codde, the flow is: source (h2 / ws) <-> `src/server-[workers|deno]` <-> [`auth.js`](src/base/auth.js]
+In terms of code, the flow is: source (h2 / ws) <-> `src/server-[workers|deno].js` <-> [`auth.js`](src/base/auth.js)
 <-> [`h2.js`](src/proxifier/h2.js) / [`ws.js`](src/proxifier/ws.js) <-> destination
 
 ## Development
@@ -28,7 +28,7 @@ wrangler deploy
 # client (node, deno, etc), or with websockets
 # test websocket proxy with go 1.19 or later
 cd ./go
-go run ./h2.go
+go run ./h1.go
 # test h2 proxy with deno v1.29+ or node v19+
 cd ./test
 ./test.js
