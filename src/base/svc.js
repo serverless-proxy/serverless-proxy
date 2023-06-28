@@ -41,7 +41,7 @@ export async function allow(r, env) {
   const h = r.headers.get(cfg.headerClaim);
   const msg = r.headers.get(cfg.headerMsg);
 
-  if (cfg.bypassAuth) {
+  if (cfg.bypassAuth && env["WENV"] !== "prod") {
     log.w("auth: bypass", "claim?", h, "msg?", msg);
     return auth.ok;
   }
