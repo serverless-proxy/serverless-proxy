@@ -3,4 +3,34 @@ main = "src/server-workers.js"
 usage_model = "bundled"
 compatibility_date = "2023-06-19"
 workers_dev = true
+logpush = false
+send_metrics = false
 compatibility_flags = [ "nodejs_compat" ]
+
+[vars]
+LOG_LEVEL = "debug"
+WENV = "dev"
+
+##################
+#------PROD------#
+##################
+[env.prod]
+name = "ken"
+minify = true
+routes = [
+  "ken.rethinkdns.com/*",
+  "ken.bravedns.com/*",
+]
+# vars are not inherited
+# workers/platform/environment-variables#environment-variables-via-wrangler
+[env.prod.vars]
+LOG_LEVEL = "info"
+WENV = "prod"
+
+##################
+#-----SECRETS----#
+##################
+# only for documentation purposes
+# developers.cloudflare.com/workers/platform/environment-variables/#adding-secrets-via-wrangler
+# [secrets]
+# SECRET_KEY_MAC_A = "64-chars-hex"
