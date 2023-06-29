@@ -45,6 +45,7 @@ export async function pipe(req, egress, waiter = (p) => p) {
   try {
     // 1. pipe without await
     // 2. do not close egress on completion
+    // 3. always use waiter, regardless of cfg.useWaiter
     waiter(ingress.pipeTo(egress.writable, { preventClose: true }));
     // stream the response out
     // blog.cloudflare.com/workers-optimization-reduces-your-bill
