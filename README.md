@@ -10,8 +10,8 @@ _serverless-proxy_ is a serverless WebSockets and HTTP2 to TCP proxy. Runs out-o
 
 The transport and destination are conveyed by the client via the URL. This means, no multiplexing, ie *one* destination per h2 / ws connection. Not multiplexing on top of doing [TCP-in-TCP is really poor](https://sshuttle.readthedocs.io/en/stable/how-it-works.html), but we'll endure until a better alternative presents itself (like QUIC, specifically [MASQUE](https://blog.cloudflare.com/building-privacy-into-internet-standards-and-how-to-make-your-app-more-private-today/), for example).
 
-In terms of code, the flow is: source (h2 / ws) <-> `src/server-[workers|deno].js` <-> [`auth.js`](src/base/auth.js)
-<-> [`h2.js`](src/proxifier/h2.js) / [`ws.js`](src/proxifier/ws.js) <-> destination
+In terms of code, the flow is: source (h2 / ws) <-> `src/server-[workers|deno].js` <-> [`svc.js`](src/base/svc.js) <->
+[`auth.js`](src/base/auth.js) <-> [`h2.js`](src/proxifier/h2.js) / [`ws.js`](src/proxifier/ws.js) <-> destination
 
 ## Development
 
