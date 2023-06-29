@@ -57,8 +57,8 @@ export async function allow(r, env) {
     return auth.notok;
   }
 
-  const [tok, sig, mac] = h.replace(auth.claimPrefix).split(auth.claimDelim);
-  return await auth.verifyClaim(sk, tok, sig, msg, mac);
+  const [tok, mac] = h.replace(auth.claimPrefix).split(auth.claimDelim);
+  return await auth.verifyClaim(sk, tok, msg, mac);
 }
 
 /**

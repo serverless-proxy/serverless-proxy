@@ -16,7 +16,7 @@ export const ok = 1;
 export const notok = 2;
 
 export async function keygen(seed, ctx) {
-  if (!emptyStr(seed) && !emptyString(ctx)) {
+  if (!emptyString(seed) && !emptyString(ctx)) {
     try {
       const sk = hex2buf(seed);
       const sk256 = sk.slice(0, hkdfalgkeysz);
@@ -27,19 +27,20 @@ export async function keygen(seed, ctx) {
   return null;
 }
 
-export async function verifyClaim(sk, thex, shex, msg, mac) {
+// Scenario 4: privacypass.github.io/protocol
+export async function verifyClaim(sk, fullthex, msghex, msgmachex) {
   try {
-    const y0 = verifyExpiry(thex);
-    if (!y0) {
+    const y1 = verifyExpiry(fullthex);
+    if (!y1) {
         log.d("verifyClaim: expired");
         return notok;
     }
-    const y1 = await verifyIssue(sk, thex, shex);
-    if (!y1) {
-      log.d("verifyClaim: invalid tok/sig");
+    const [hashedthex, shex] = await deriveIssue(sk, fullthex);
+    if (!hashedthex || !shex) {
+      log.d("verifyClaim: cannot derive tok/sig");
       return notok;
     }
-    const y2 = await verifyMessage(shex, msg, mac);
+    const y2 = await verifyMessage(shex, msghex, msgmachex);
     if (!y2) {
       log.d("verifyClaim: invalid msg/mac");
       return notok;
@@ -52,35 +53,39 @@ export async function verifyClaim(sk, thex, shex, msg, mac) {
 }
 
 // Scenario 4: privacypass.github.io/protocol
-export async function issue(hmackey, thex) {
+export async function issue(sigkey, hashedthex) {
+  if (emptyString(hashedthex) || hashedthex.length !== 64) {
+    return null;
+  }
   // expires in 30days
   const expiryMs = Date.now() + 30 * 24 * 60 * 60 * 1000;
   // expiryHex will not exceed 11 chars until 17592186044415 (year 2527)
   // 17592186044415 = 0xfffffffffff
   const expiryHex = expiryMs.toString(16);
-  if (!emptyString(thex) && thex.length === 64) {
-    thex = expiryHex + thex;
-  } else {
-    thex = expiryHex + buf2hex(rand(32));
-  }
-  const token = hex2buf(thex);
-  const sig = await crypto.subtle.sign("HMAC", hmackey, token);
+  hashedthex = expiryHex + hashedthex;
+  const hashedtoken = hex2buf(hashedthex);
+  const sig = await hmacsign(sigkey, hashedtoken);
   const shex = buf2hex(sig);
-  return [thex, shex];
+  return [hashedthex, shex];
 }
 
-async function verifyIssue(hmackey, thex, shex) {
-  // verify a signed token
-  const token = hex2buf(thex);
-  const sig = hex2buf(shex);
-  return await crypto.subtle.verify("HMAC", hmackey, sig, token);
+async function deriveIssue(sigkey, fullthex) {
+  const expiryHex = fullthex.slice(0, 11);
+  const userthex = fullthex.slice(11);
+  const usertoken = hex2buf(userthex);
+  const userhashedtoken = await sha256(usertoken);
+  const hashedthex =  expiryHex + buf2hex(userhashedtoken);
+  const hashedtoken = hex2buf(hashedthex);
+  const sig = await hmacsign(sigkey, hashedtoken);
+  const shex = buf2hex(sig);
+  return [hashedthex, shex];
 }
 
-export async function message(shex, msgstr) {
+export async function message(shex, msghex) {
   const sig = hex2buf(shex);
   const sigkey = await hmackey(sig);
-  const msg = hex2buf(msgstr);
-  const mac = await crypto.subtle.sign("HMAC", sigkey, msg);
+  const msg = hex2buf(msghex);
+  const mac = await hmacsign(sigkey, msg);
   const machex = buf2hex(mac);
   return machex;
 }
@@ -89,9 +94,8 @@ async function verifyMessage(shex, msgstr, msgmachex) {
   const sig = hex2buf(shex);
   const sigkey = await hmackey(sig);
   const msg = hex2buf(msgstr);
-  const mac = await crypto.subtle.sign("HMAC", sigkey, msg);
-  const machex = buf2hex(mac);
-  return machex === msgmachex;
+  const mac = hex2buf(msgmachex);
+  return hmacverify(sigkey, mac, msg);
 }
 
 function verifyExpiry(thex) {
@@ -101,10 +105,18 @@ function verifyExpiry(thex) {
   return expiryMs >= Date.now();
 }
 
-function rand(sz = 16) {
+export function rand(sz = 16) {
   const t = new Uint8Array(sz);
   crypto.getRandomValues(t);
   return t;
+}
+
+async function hmacsign(ck, m) {
+  return crypto.subtle.sign("HMAC", ck, m);
+}
+
+async function hmacverify(ck, mac, m) {
+  return crypto.subtle.verify("HMAC", ck, mac, m);
 }
 
 // salt for hkdf can be zero: stackoverflow.com/a/64403302
@@ -114,7 +126,7 @@ async function gen(secret, info, salt = ZEROBUF) {
   }
 
   // exportable: crypto.subtle.exportKey("raw", key);
-  return (key = await hkdfhmac(secret, info, salt));
+  return hkdfhmac(secret, info, salt);
 }
 
 // with hkdf, salt is optional and public, but if used,
@@ -125,7 +137,7 @@ async function gen(secret, info, salt = ZEROBUF) {
 // see: soatok.blog/2021/11/17/understanding-hkdf
 async function hkdfhmac(skmac, usectx, salt = ZEROBUF) {
   const dk = await hkdf(skmac);
-  return await crypto.subtle.deriveKey(
+  return crypto.subtle.deriveKey(
     hkdf256(salt, usectx),
     dk,
     hmac256opts(),
@@ -135,7 +147,7 @@ async function hkdfhmac(skmac, usectx, salt = ZEROBUF) {
 }
 
 async function hmackey(sk) {
-  return await crypto.subtle.importKey(
+  return crypto.subtle.importKey(
     "raw",
     sk,
     hmac256opts(),
@@ -145,7 +157,7 @@ async function hmackey(sk) {
 }
 
 async function hkdf(sk) {
-  return await crypto.subtle.importKey(
+  return crypto.subtle.importKey(
     "raw",
     sk,
     "HKDF",
@@ -162,9 +174,14 @@ function hkdf256(salt, usectx) {
   return { name: "HKDF", hash: "SHA-256", salt: salt, info: usectx };
 }
 
+async function sha256(buf) {
+  const ab = await crypto.subtle.digest("SHA-256", buf);
+  return byt(ab);
+}
+
 async function sha512(buf) {
   const ab = await crypto.subtle.digest("SHA-512", buf);
-  return new Uint8Array(ab);
+  return byt(ab);
 }
 
 function str2byte(s) {
@@ -182,8 +199,15 @@ function raw(b) {
   return b.buffer;
 }
 
+// given a buffer b, returns its uint8array view
+function byt(b) {
+  if (emptyBuf(b)) return ZEROBUF;
+  const ab = raw(b);
+  return new Uint8Array(ab);
+}
+
 function buf2hex(b) {
-  const u8 = new Uint8Array(raw(b));
+  const u8 = byt(b);
   return Array.from(u8)
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
