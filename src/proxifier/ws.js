@@ -18,7 +18,7 @@ export function isWs(req) {
  * @param {TransformStream} egress
  * @param {function(Promise)} waiter
  */
-export async function accept(egress, waiter = (p) => p) {
+export async function accept(egress, waiter) {
   // github.com/cloudflare/websocket-template/blob/main/index.js
   // developers.cloudflare.com/workers/learning/using-websockets
   const [client, server] = Object.values(new WebSocketPair());
@@ -29,7 +29,7 @@ export async function accept(egress, waiter = (p) => p) {
   log.d("ws: accept: eg? ing?", egress != null, ingress != null);
 
   if (ingress) {
-    waiter = cfg.useWaiter ? waiter : null;
+    waiter = cfg.useWaiter ? waiter : undefined;
     pipe(ingress, egress, waiter);
     return new Response(null, { status: 101, webSocket: client });
   }
