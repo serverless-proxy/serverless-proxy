@@ -87,7 +87,7 @@ func dialws(ctx context.Context, client *http.Client, rurl string) (c net.Conn, 
 func fetch(ctx context.Context, h2 *http.Client, url string) (net.Conn, error) {
 	reader, writer := io.Pipe()
 
-	req, err := http.NewRequest(http.MethodPost, url, nil)
+	req, err := http.NewRequest(http.MethodPost, url, io.NopCloser(reader))
 	if err != nil {
 		return nil, err
 	}
