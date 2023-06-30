@@ -1,4 +1,4 @@
-### All-in on Serverless.
+### All-in on Serverless
 
 _serverless-proxy_ is a serverless WebSockets and HTTP2 to TCP proxy. Runs out-of-the-box on [Cloudflare Workers](https://workers.dev) and [Deno Deploy](https://deno.com/deploy).
 
@@ -10,7 +10,9 @@ _serverless-proxy_ is a serverless WebSockets and HTTP2 to TCP proxy. Runs out-o
 
 The transport and destination are conveyed by the client via the URL. This means, no multiplexing, ie *one* destination per h2 / ws connection. Not multiplexing on top of doing [TCP-in-TCP is really poor](https://sshuttle.readthedocs.io/en/stable/how-it-works.html), but we'll endure until a better alternative presents itself (like QUIC, specifically [MASQUE](https://blog.cloudflare.com/building-privacy-into-internet-standards-and-how-to-make-your-app-more-private-today/), for example).
 
-In terms of code, the flow is: source (h2 / ws) <-> `src/server-[workers|deno].js` <-> [`svc.js`](src/base/svc.js) <->
+The URL for *h2* (HTTP2) and *ws* (WebSockets) full-duplex tunnels to connect to a *hostname:port* over TCP is of form `https://<sub.domain.workers.dev>/[h2|ws]/<hostname>/<port>`. An example client implementation is available in [Deno](test/test.js) for *h2* and [go](go/h1h2.go) for *ws*.
+
+In terms of server code, the flow is: source (h2 / ws) <-> `src/server-[workers|deno].js` <-> [`svc.js`](src/base/svc.js) <->
 [`auth.js`](src/base/auth.js) <-> [`h2.js`](src/proxifier/h2.js) / [`ws.js`](src/proxifier/ws.js) <-> destination
 
 ## Development
