@@ -95,8 +95,12 @@ async function duplex(websocket) {
       bw.tx += n;
       log.v("ws: write?", ok, "d?", n, "total", bw.tx);
       // developer.mozilla.org/en-US/docs/Web/API/WritableStreamDefaultController
-      if (ok) websocket.send(chunk);
-      else if (wctl) wctl.error("websocket closed");
+      if (ok) {
+        websocket.send(chunk);
+      } else if (wctl) {
+        log.v("ws: write err, ws closed");
+        wctl.close();
+      }
     },
     close(wctl) {
       close(websocket, 1000, "remote closed", bw);
