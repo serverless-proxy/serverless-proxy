@@ -164,7 +164,7 @@ function chain(websocket, reader) {
   // developer.mozilla.org/en-US/docs/Web/API/WebSocket/error_event
   websocket.addEventListener("error", (event) => {
     log.e("ws: err", event.message);
-    reader.error(event);
+    reader.close();
   });
 }
 
