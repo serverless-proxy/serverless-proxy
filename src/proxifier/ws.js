@@ -55,7 +55,7 @@ export function pipe(ingress, egress, waiter = (p) => p) {
   waiter(
     egress.readable
       .pipeTo(ingress.writable)
-      .catch((ex) => log.e("pipe: out2in", ex.message))
+      .catch((ex) => log.e("pipe: out2in err", ex.message))
   );
 }
 
