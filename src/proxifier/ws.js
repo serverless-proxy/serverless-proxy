@@ -5,6 +5,8 @@ import * as cfg from "../base/cfg.js";
 import * as modres from "../base/res.js";
 import * as log from "../base/log.js";
 
+/** @typedef {{rx: number, tx: number, p: number}} BandwidthStats */
+
 /**
  * @param {Request} req
  * @returns {boolean}
@@ -70,14 +72,15 @@ async function duplex(websocket) {
     log.e("ws: duplex err", ex);
     return null;
   }
+  const bw = { rx: 0, tx: 0, p: Date.now() };
   // developer.mozilla.org/en-US/docs/Web/API/ReadableStream/ReadableStream
   const r = new ReadableStream({
     start(rctl) {
-      chain(websocket, rctl);
+      chain(websocket, rctl, bw);
       log.d("ws: readable started");
     },
     cancel(reason) {
-      close(websocket, 1014, reason);
+      close(websocket, 1014, reason, bw);
     },
   });
 
@@ -88,18 +91,20 @@ async function duplex(websocket) {
     },
     write(chunk, wctl) {
       const ok = wsok(websocket);
-      log.d("ws: write?", ok, "d?", chunk != null, "ctl?", wctl != null);
+      const n = len(chunk);
+      bw.tx += n;
+      log.v("ws: write?", ok, "d?", n, "total", bw.tx);
       // developer.mozilla.org/en-US/docs/Web/API/WritableStreamDefaultController
       if (ok) websocket.send(chunk);
       else if (wctl) wctl.error("websocket closed");
     },
     close(wctl) {
-      close(websocket, 1000, "remote closed");
+      close(websocket, 1000, "remote closed", bw);
       // on workers, wctl is undefined?
       if (wctl) wctl.close();
     },
     abort(reason) {
-      close(websocket, 1014, reason);
+      close(websocket, 1014, reason, bw);
     },
   });
 
@@ -145,20 +150,23 @@ function setup(websocket) {
 /**
  * @param {WebSocket} websocket
  * @param {ReadableByteStreamController} reader
+ * @param {BandwidthStats} bw
  */
-function chain(websocket, reader) {
+function chain(websocket, reader, bw) {
   // developers.cloudflare.com/workers/runtime-apis/websockets
   // developer.mozilla.org/en-US/docs/Web/API/WebSocket/message_event
   websocket.addEventListener("message", (what) => {
     const { data, type } = what;
-    log.d("ws: recv", data, type);
+    const n = len(data);
+    bw.rx += n;
+    log.v("ws: recv", n, type, "total", bw.rx);
     if (data) reader.enqueue(data);
   });
   // developer.mozilla.org/en-US/docs/Web/API/WebSocket/close_event
   websocket.addEventListener("close", (why) => {
     const { code, reason, wasClean } = why;
     log.d("ws: close", code, reason, "clean?", wasClean);
-    close(websocket, code, reason);
+    close(websocket, code, reason, bw);
     reader.close();
   });
   // developer.mozilla.org/en-US/docs/Web/API/WebSocket/error_event
@@ -173,7 +181,7 @@ function chain(websocket, reader) {
  * @returns {boolean}
  */
 function wsok(websocket) {
-  log.d("ws: state?", websocket.readyState);
+  log.v("ws: state?", websocket.readyState);
   // WebSocket.OPEN is undefined on Workers
   // developer.mozilla.org/en-US/docs/Web/API/WebSocket/readyState
   // 0 = CONNECTING, 1 = OPEN, 2 = CLOSING, 3 = CLOSED
@@ -184,10 +192,18 @@ function wsok(websocket) {
  * @param {WebSocket} websocket
  * @param {number} code
  * @param {string} reason
+ * @param {BandwidthStats} bw
  */
-function close(websocket, code = 1000, reason = "ok") {
+function close(websocket, code = 1000, why = "ok", bw) {
   // developers.cloudflare.com/workers/runtime-apis/websockets/#close
   // developer.mozilla.org/en-US/docs/Web/API/CloseEvent/code
-  log.d("ws: close", code, reason);
-  websocket.close(code, reason);
+  log.d("ws: close", code, why, "rx/tx/p", bw.rx, bw.tx, bw.p - Date.now());
+  websocket.close(code, why);
+}
+
+function len(arraylike) {
+  if (arraylike == null) return 0;
+  if (arraylike.byteLength != null) return arraylike.byteLength;
+  if (arraylike.length != null) return arraylike.length;
+  return 0;
 }
