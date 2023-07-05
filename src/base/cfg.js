@@ -16,14 +16,21 @@ export const h2header = {
 export const headerClaim = "x-nile-pip-claim";
 // msg is a nonce for the claim
 export const headerMsg = "x-nile-pip-msg";
+// mac is a hmac of the headerMsg
+export const headerMac = "x-nile-pip-mac";
+// svc token authenticates our internal services
+export const headerSvcPsk = "x-nile-svc-psk";
 // dangerous. do not enable. bypass auth?
 // not respected when wenv is prod
 export const bypassAuth = true;
-// immutable info context for keygen
-export const authContext = "per-client-pip-key";
 // websockets upgrade header
 export const upgradeHeader = "Upgrade";
 // connection timeout for websockets; unused on workers
 export const wsConnTimeoutMs = 10000;
 // use ctx.waitUntil() to wait for websockets rw streams to close
-export const useWaiter = true;
+export const useWaiter = false;
+// immutable info context for keygen
+export const authContext = "per-client-pip-key";
+
+export const wenvBlindRsaPrivateKeyPrefix = "PRIVATE_KEY_BLINDRSA_";
+export const wenvBlindRsaPublicKeyPrefix = "PUBLIC_KEY_BLINDRSA_";
