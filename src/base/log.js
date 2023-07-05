@@ -4,7 +4,7 @@
 import * as cfg from "./cfg.js";
 
 let levels = { v: 0, d: 1, log: 2, g: 2, i: 3, w: 4, e: 5 };
-let wh = (cfg.debug) ? levels["d"] : levels["i"];
+let wh = cfg.debug ? levels["d"] : levels["i"];
 
 export function key(k = "info") {
   if (cfg.debug) k = "d";
