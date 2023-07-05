@@ -30,7 +30,7 @@ wrangler deploy
 # client (node, deno, etc), or with websockets
 # test websocket proxy with go 1.19 or later
 cd ./go
-go run ./h1.go
+go run ./h1h2.go
 # test h2 proxy with deno v1.29+ or node v19+
 cd ./test
 ./test.js
