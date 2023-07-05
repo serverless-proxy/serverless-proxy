@@ -98,7 +98,7 @@ export async function allow(r, env, ctx) {
   const info = grabRsaSig(r.url);
 
   if (cfg.bypassAuth && env["WENV"] !== "prod") {
-    log.w("auth: bypass", "claim?", h, "msg?", msg);
+    log.w("auth: bypass", "claim?", mac, "msg?", msg);
     return auth.ok;
   }
 
