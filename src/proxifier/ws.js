@@ -98,8 +98,8 @@ async function duplex(websocket) {
       if (ok) {
         websocket.send(chunk);
       } else if (wctl) {
-        log.v("ws: write err, ws closed");
-        wctl.close();
+        log.w("ws: write err, ws closed");
+        wctl.error("websocket closed");
       }
     },
     close(wctl) {
@@ -201,7 +201,10 @@ function wsok(websocket) {
 function close(websocket, code = 1000, why = "ok", bw) {
   // developers.cloudflare.com/workers/runtime-apis/websockets/#close
   // developer.mozilla.org/en-US/docs/Web/API/CloseEvent/code
-  log.d("ws: close", code, why, "rx/tx/p", bw.rx, bw.tx, bw.p - Date.now());
+  const dur = (((Date.now() - bw.p) / 1000) | 0) + "s";
+  const rx = (bw.rx / 1024).toFixed(3) + "kb";
+  const tx = (bw.tx / 1024).toFixed(3) + "kb";
+  log.d("ws: close", code, why, "rx/tx/p", rx, tx, dur);
   websocket.close(code, why);
 }
 
