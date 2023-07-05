@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2023 RethinkDNS and its authors
 
-import * as auth from "./base/auth.js";
+import * as auth from "./core/auth.js";
 import * as net from "cloudflare:sockets";
 import * as cfg from "./base/cfg.js";
 import * as h2 from "./proxifier/h2.js";
-import * as svc from "./base/svc.js";
+import * as svc from "./core/svc.js";
+import * as wsvc from "./workers/wsvc.js";
 import * as ws from "./proxifier/ws.js";
 import * as modres from "./base/res.js";
 import * as log from "./base/log.js";
@@ -22,9 +23,15 @@ export default {
     if (what.startsWith("yo")) {
       log.d("svc: test");
       return svc.tester(req, addr.hostname);
+    } else if (what.startsWith("sign")) {
+      log.d("auth: sign");
+      return wsvc.sign(req, env, ctx);
+    } else if (what.startsWith("iss")) {
+      log.d("auth: verify");
+      return wsvc.issue(req, env, ctx);
     }
 
-    const authres = await svc.allow(req, env, ctx);
+    const authres = await wsvc.allow(req, env, ctx);
     if (authres !== auth.ok) {
       log.d("auth: failed");
       return modres.r503;
@@ -38,7 +45,7 @@ export default {
         log.d("ws: connect", addr);
         const sock = mksocket(addr);
         return ws.accept(sock, dispatch);
-      } else if (what.startsWith("h2")) {
+      } else if (what.startsWith("h3") || what.startsWith("h2")) {
         log.d("pipe: connect", addr);
         const sock = mksocket(addr);
         return h2.pipe(req, sock, dispatch);

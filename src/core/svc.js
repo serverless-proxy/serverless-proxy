@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2023 RethinkDNS and its authors
 
-import * as cfg from "./cfg.js";
-import * as log from "./log.js";
-import * as auth from "./auth.js";
-import * as modres from "./res.js";
+import * as cfg from "../base/cfg.js";
+import * as log from "../base/log.js";
+import * as modres from "../base/res.js";
 
 /**
  * @typedef {{ hostname: string, port: number, transport: string }} Addr
@@ -35,30 +34,6 @@ export function intent(u) {
   const addr = { hostname: dst, port: dstport, transport: proto };
 
   return [w, addr];
-}
-
-export async function allow(r, env) {
-  const h = r.headers.get(cfg.headerClaim);
-  const msg = r.headers.get(cfg.headerMsg);
-
-  if (cfg.bypassAuth && env["WENV"] !== "prod") {
-    log.w("auth: bypass", "claim?", h, "msg?", msg);
-    return auth.ok;
-  }
-
-  if (!h || !msg) {
-    log.d("auth: no claim or msg");
-    return auth.notok;
-  }
-
-  const sk = await auth.keygen(env.SECRET_KEY_MAC_A, cfg.authContext);
-  if (!sk) {
-    log.e("auth: no sk");
-    return auth.notok;
-  }
-
-  const [tok, mac] = h.replace(auth.claimPrefix).split(auth.claimDelim);
-  return await auth.verifyClaim(sk, tok, msg, mac);
 }
 
 /**
