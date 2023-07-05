@@ -12,25 +12,35 @@ import (
 	"os"
 	"time"
 
+	"github.com/quic-go/quic-go/http3"
 	"golang.org/x/net/http2"
 	"nhooyr.io/websocket"
 )
 
 func main() {
 	ctx := context.Background()
-	testws := true
+	testproto := "h3"
 	h2client := &http.Client{Transport: &http2.Transport{}}
 	h1client := &http.Client{Transport: &http.Transport{}}
+	h3client := &http.Client{Transport: &http3.RoundTripper{}}
 
 	var tunnel net.Conn
 	var err error
 
 	url := "https://proxy.nile.workers.dev/h2/midway.fly.dev/5001"
 
-	if testws {
+	switch testproto {
+	case "h3":
+		tunnel, err = fetch(ctx, h3client, url)
+	case "ws":
 		url = "wss://proxy.nile.workers.dev/ws/midway.fly.dev/5001"
 		tunnel, err = dialws(ctx, h1client, url)
-	} else {
+	case "h1":
+		log.Printf("h1")
+		tunnel, err = fetch(ctx, h1client, url)
+	case "h2":
+		fallthrough
+	default:
 		// url = "https://midway.deno.dev/p/midway.fly.dev/5001"
 		tunnel, err = fetch(ctx, h2client, url)
 	}
@@ -47,6 +57,10 @@ func main() {
 	doneCh := make(chan int, 1)
 	go func() {
 		w.Write([]byte("GET ADDR\r\n"))
+		time.Sleep(1 * time.Second)
+		w.Write([]byte("GET / HTTP/1.1\r\n"))
+		time.Sleep(1 * time.Second)
+		w.Write([]byte("Host: midway.fly.dev\r\n"))
 	}()
 	go func() {
 		io.Copy(tunnel, r)
@@ -87,13 +101,15 @@ func dialws(ctx context.Context, client *http.Client, rurl string) (c net.Conn, 
 func fetch(ctx context.Context, h2 *http.Client, url string) (net.Conn, error) {
 	reader, writer := io.Pipe()
 
-	req, err := http.NewRequest(http.MethodPost, url, io.NopCloser(reader))
+	req, err := http.NewRequest(http.MethodPut, url, io.NopCloser(reader))
 	if err != nil {
 		return nil, err
 	}
 
 	req = req.WithContext(ctx)
-	req.ContentLength = -1
+	req.TransferEncoding = []string{"chunked"}
+	req.ContentLength = 10
+	// req.TransferEncoding = []string{"binary"}
 	req.Close = false
 	req.GetBody = func() (io.ReadCloser, error) {
 		log.Println("h2: get body")
@@ -102,7 +118,9 @@ func fetch(ctx context.Context, h2 *http.Client, url string) (net.Conn, error) {
 	log.Println("fetch", req.URL)
 	resCh := make(chan io.ReadCloser, 1)
 	go func() {
+		log.Println("h2: req do")
 		res, err := h2.Do(req)
+		log.Println("h2: req done")
 		if err != nil || res == nil {
 			log.Println("h2: fetch err", err)
 			resCh <- nil
@@ -149,7 +167,7 @@ func (c *Conn) Read(data []byte) (n int, err error) {
 	// log.Println("read?", len(data), c.r != nil)
 	if c.r == nil {
 		c.noread += 1
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(300 * time.Millisecond)
 		if c.noread > 100 {
 			log.Println("h2: noread threshold", c.noread)
 			return 0, io.ErrNoProgress
@@ -162,6 +180,7 @@ func (c *Conn) Read(data []byte) (n int, err error) {
 			return 0, io.EOF
 		}
 	*/
+	log.Println("h2: read do", len(data))
 	n, err = c.r.Read(data)
 	log.Println("h2: read done", n, err)
 	return n, err
