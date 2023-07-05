@@ -1,0 +1,20 @@
+{
+  "private": true,
+  "name": "ken.rdns",
+  "version": "0.1",
+  "license": "MPL-2.0",
+  "description": "Serverless H2/WebSockets to TCP proxy built for Rethink DNS + Firewall Android app.",
+  "main": "",
+  "type": "module",
+  "scripts": {
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/serverless-proxy/serverless-proxy.git"
+  },
+  "author": "",
+  "bugs": {
+    "url": "https://github.com/serverless-proxy/serverless-proxy/issues"
+  },
+  "homepage": "https://github.com/serverless-proxy"
+}
