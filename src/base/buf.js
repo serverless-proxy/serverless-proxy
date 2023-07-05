@@ -36,14 +36,17 @@ export function buf2hex(b) {
 }
 
 export function hex2buf(h) {
+  if (emptyString(h)) return ZEROBUF;
   return new Uint8Array(h.match(/.{1,2}/g).map((w) => parseInt(w, 16)));
 }
 
 export function num2hex(n) {
+  if (typeof n !== "number") return "";
   return n.toString(16).padStart(2, "0");
 }
 
 export function hex2num(h) {
+  if (typeof h !== "string") return 0;
   return parseInt(h, 16);
 }
 
