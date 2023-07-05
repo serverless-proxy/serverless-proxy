@@ -5,7 +5,7 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 
 import * as cfg from "./base/cfg.js";
 import * as h2 from "./proxifier/h2.js";
-import * as svc from "./base/svc.js";
+import * as svc from "./core/svc.js";
 import * as ws from "./proxifier/ws.js";
 import * as modres from "./base/res.js";
 import * as log from "./base/log.js";
@@ -26,12 +26,7 @@ async function handle(req) {
     return svc.tester(req, addr.hostname);
   }
 
-  const authres = await svc.allow(req, env, ctx);
-  if (authres !== auth.ok) {
-    log.d("auth failed");
-    return modres.r503;
-  }
-
+  // todo: impl auth
   try {
     if (what.startsWith("ws")) {
       if (!ws.isWs(req)) {
