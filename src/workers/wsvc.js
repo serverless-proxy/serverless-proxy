@@ -68,8 +68,7 @@ export async function issue(r, env, ctx) {
   const rsamsghex = msgsig[0];
   const rsasighex = msgsig[1];
   const hashedthex = msgsig[2];
-  const ctx = grabRsaSig(r.url);
-  if (!rsamsghex || !rsasighex || !hashedthex || !ctx) return modres.r401;
+  if (!rsamsghex || !rsasighex || !hashedthex) return modres.r401;
 
   const msg = bin.hex2buf(rsamsghex);
   const sig = bin.hex2buf(rsasighex);
@@ -96,14 +95,14 @@ export async function allow(r, env, ctx) {
   const tok = r.headers.get(cfg.headerClaim);
   const msg = r.headers.get(cfg.headerMsg);
   const mac = r.headers.get(cfg.headerMac);
-  const ctx = grabRsaSig(r.url);
+  const info = grabRsaSig(r.url);
 
   if (cfg.bypassAuth && env["WENV"] !== "prod") {
     log.w("auth: bypass", "claim?", h, "msg?", msg);
     return auth.ok;
   }
 
-  if (!tok || !mac || !msg || !ctx) {
+  if (!tok || !mac || !msg || !info) {
     log.d("auth: no claim or msg");
     return auth.notok;
   }
@@ -113,14 +112,14 @@ export async function allow(r, env, ctx) {
     return auth.notok;
   }
 
-  const tokcachekey = tok + msg + mac + ctx;
+  const tokcachekey = tok + msg + mac + info;
   if (TOKAUTH.has(tokcachekey)) {
     log.d("auth: cached claim: ok");
     return auth.ok;
   }
 
   // todo: cache auth result
-  const sk = await macsecret(env, ctx);
+  const sk = await macsecret(env, info);
   if (!sk) {
     log.e("auth: no sk");
     return auth.notok;

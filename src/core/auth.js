@@ -12,7 +12,6 @@ import {
   sha256,
   sha512,
 } from "../webcrypto/hmac.js";
-import { env } from "process";
 
 export const claimPrefix = "pip_";
 export const claimDelim = ":";
