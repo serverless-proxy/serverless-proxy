@@ -4,8 +4,11 @@
 import * as cfg from "../base/cfg.js";
 import * as fs from "node:fs";
 import * as brsa from "../webcrypto/blindrsa.js";
+import * as bin from "../base/buf.js";
+import { rand } from "../webcrypto/hmac.js";
 
 const jfs = "rsakeys.json";
+const pskfs = "svcpsk.json";
 
 export async function saveRsaKey() {
   const x = await brsa.genkey();
@@ -18,28 +21,72 @@ export async function saveRsaKey() {
   fs.writeFileSync(jfs, JSON.stringify(json, null, 2));
 }
 
-export async function setWranglerSecrets(prod) {
+export async function savePskSvc() {
+  const x = rand(64);
+  const hex = bin.buf2hex(x);
+  const pskname = cfg.wenvPskSvc;
+  fs.writeFileSync(pskfs, JSON.stringify({ [pskname]: hex }, null, 2));
+}
+
+export async function setRsaWranglerSecrets(prod) {
   // developers.cloudflare.com/workers/wrangler/commands/#secretbulk
   // wrangler secret:bulk <JSON> --env <ENVIRONMENT> --name <WORKER-NAME>
   const cmd = "wrangler";
-  const args = ["secret:bulk", jfs];
+  const args0 = ["secret:bulk", jfs];
   if (prod) {
-    args.push("--env");
-    args.push("prod");
+    args0.push("--name");
+    args0.push("ken");
+  } else {
+    args0.push("--name");
+    args0.push("proxy");
   }
-  const ok = sh(cmd, args);
+  const ok = sh(cmd, args0);
   if (!ok) {
-    const ex = "wrangler secret put failed"
+    const ex = "wrangler rsa secret put failed";
     throw new Error(ex);
   }
+
   // store public key with worker, svc
+  const x = JSON.parse(fs.readFileSync("rsakeys.json"));
+  const pkname = Object.keys(x)[1];
+  const pk = x[pkname];
+  // developers.cloudflare.com/workers/wrangler/commands/#put-3
+  // wrangler secret put <KEY> --env <ENVIRONMENT> --name <WORKER-NAME>
+  const args1 = ["secret", "put", pkname, pk];
   if (prod) {
-    // const x = JSON.parse(fs.readFileSync("rsakeys.json"));
-    // const pkname = Object.keys(x)[1];
-    // const pk = x[pkname];
-    // developers.cloudflare.com/workers/wrangler/commands/#put-3
-    // wrangler secret put <KEY> --env <ENVIRONMENT> --name <WORKER-NAME>
-    // const args = ["secret", "put", pkname, pk, "--name", "svc"];
+    args1.push("--name");
+    args1.push("svc");
+  } else {
+    args1.push("--name");
+    args1.push("redir");
+  }
+  const ok1 = sh(cmd, args1);
+  if (!ok1) {
+    throw new Error("svc: wrangler psk secret put failed");
+  }
+}
+
+export async function setPskWranglerSecrets(prod) {
+  // wrangler secret:bulk <JSON> --env <ENVIRONMENT> --name <WORKER-NAME>
+  const cmd = "wrangler";
+  const args0 = ["secret:bulk", pskfs];
+  const ok0 = sh(cmd, args0);
+  if (!ok0) {
+    throw new Error("sproxy: wrangler psk secret put failed");
+  }
+  // store public key with worker, svc
+  // or: wrangler secret put <KEY> --env <ENVIRONMENT> --name <WORKER-NAME>
+  const args1 = ["secret:bulk", pskfs];
+  if (prod) {
+    args1.push("--name");
+    args1.push("svc");
+  } else {
+    args1.push("--name");
+    args1.push("redir");
+  }
+  const ok1 = sh(cmd, args1);
+  if (!ok1) {
+    throw new Error("svc: wrangler psk secret put failed");
   }
 }
 

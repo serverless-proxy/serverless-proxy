@@ -8,7 +8,10 @@ const notprod = false;
   console.log("gen keys for dev...");
   try {
     await k.saveRsaKey();
-    await k.setWranglerSecrets(notprod);
+    await k.savePskSvc();
+
+    await k.setRsaWranglerSecrets(notprod);
+    await k.setPskWranglerSecrets(notprod);
   } catch (ex) {
     console.error(ex);
     process.exit(1);
