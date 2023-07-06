@@ -19,7 +19,6 @@ export default {
     const u = new URL(req.url);
     const [what, addr] = svc.intent(u);
 
-
     if (what.startsWith("yo")) {
       log.d("svc: test");
       return svc.tester(req, addr.hostname);
@@ -27,7 +26,7 @@ export default {
       log.d("auth: sign");
       return wsvc.sign(req, env, ctx);
     } else if (what.startsWith("iss")) {
-      log.d("auth: verify");
+      log.d("auth: issue");
       return wsvc.issue(req, env, ctx);
     }
 
