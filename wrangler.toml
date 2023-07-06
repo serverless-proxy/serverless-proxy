@@ -34,3 +34,6 @@ WENV = "prod"
 # developers.cloudflare.com/workers/platform/environment-variables/#adding-secrets-via-wrangler
 # [secrets]
 # SECRET_KEY_MAC_A = "64-chars-hex"
+# PRE_SHARED_KEY_SVC = "128-chars-hex"
+# PRIVATE_KEY_BLINDRSA_(timestamp) = "sk-rsa-pss-hex"
+# PUBLIC_KEY_BLINDRSA_(timestamp) = "pub-rsa-pss-hex"

@@ -154,7 +154,6 @@ async function macsecret(env, ctx) {
 }
 
 /**
- *
  * @param {any} env
  * @returns {Promise<CryptoKey[]>}
  * @throws when rsa-pss pub/priv keys are missing
@@ -163,6 +162,7 @@ async function rsasecrets(env) {
   if (KEYS.ckpriv != null || KEYS.ckpub != null) {
     return [KEYS.ckpriv, KEYS.ckpub];
   }
+  // see: redir's rsapubkey fn
   const privprefix = cfg.wenvBlindRsaPrivateKeyPrefix;
   const pubprefix = cfg.wenvBlindRsaPublicKeyPrefix;
   // default key name
