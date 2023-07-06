@@ -34,3 +34,4 @@ export const authContext = "per-client-pip-key";
 
 export const wenvBlindRsaPrivateKeyPrefix = "PRIVATE_KEY_BLINDRSA_";
 export const wenvBlindRsaPublicKeyPrefix = "PUBLIC_KEY_BLINDRSA_";
+export const wenvPskSvc = "PRE_SHARED_KEY_SVC";

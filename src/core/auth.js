@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2023 RethinkDNS and its authors
 
+import * as cfg from "../base/cfg.js";
 import * as log from "../base/log.js";
 import * as bin from "../base/buf.js";
 import {
@@ -133,7 +134,8 @@ export function verifyExpiry(thex) {
 }
 
 export function verifySvcPsk(env, hex) {
-  return hex === env.PRE_SHARED_KEY_SVC ? ok : notok;
+  if (env[cfg.wenvPskSvc] == null) return notok;
+  return hex === env[cfg.wenvPskSvc] ? ok : notok;
 }
 
 // salt for hkdf can be zero: stackoverflow.com/a/64403302
