@@ -8,6 +8,7 @@ import * as modres from "../base/res.js";
 import * as brsa from "../sjcl/brsa.js";
 import * as krsa from "../webcrypto/blindrsa.js";
 import * as bin from "../base/buf.js";
+import { sha256 } from "../webcrypto/hmac.js";
 
 const KEYS = {
   // todo: use lfu cache
@@ -22,6 +23,8 @@ const KEYS = {
 // todo: use lfu cache
 /** @type {Set<string>} */
 const TOKAUTH = new Set();
+
+const enc = new TextEncoder();
 
 /**
  * Given a blind message, return a blind signature.
@@ -92,12 +95,15 @@ export async function issue(r, env, ctx) {
  * @param {any} ctx
  */
 export async function allow(r, env, ctx) {
+  const url = new URL(r.url);
   const tok = r.headers.get(cfg.headerClaim);
-  const msg = r.headers.get(cfg.headerMsg);
   const mac = r.headers.get(cfg.headerMac);
-  const info = grabRsaSig(r.url);
+  // msg is hex(sha256(url.pathname))
+  // const msg = r.headers.get(cfg.headerMsg);
+  const msg = await grabMsg(url);
+  const info = grabRsaSig(url);
 
-  if (cfg.bypassAuth && env["WENV"] !== "prod") {
+  if (cfg.bypassAuth && notprod(env)) {
     log.w("auth: bypass", "claim?", mac, "msg?", msg);
     return auth.ok;
   }
@@ -185,16 +191,30 @@ async function rsasecrets(env) {
 }
 
 /**
- * @param {string} url
+ * @param {URL} u
  * @returns {string}
  */
-function grabRsaSig(url) {
+function grabRsaSig(u) {
   try {
-    const u = new URL(url);
     const p = u.pathname.split("/");
     return p[2];
   } catch (ex) {
     log.w("wsvc: grabRsaSig", ex);
+  }
+  return null;
+}
+
+/**
+ * @param {URL} u
+ * @returns {Promise<string>}
+ */
+async function grabMsg(u) {
+  try {
+    const p = enc.encode(u.pathname);
+    const d = await sha256(p);
+    return bin.buf2hex(d);
+  } catch (ex) {
+    log.w("wsvc: grabMsg", ex);
   }
   return null;
 }
@@ -210,4 +230,12 @@ function superuser(r, env) {
 
   const svcauthres = auth.verifySvcPsk(env, svcpskhex);
   return svcauthres === auth.ok;
+}
+
+/**
+ * @param {any} env
+ * @returns {boolean}
+ */
+function notprod(env) {
+  return env["WENV"] !== "prod";
 }
