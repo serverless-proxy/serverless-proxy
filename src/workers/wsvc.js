@@ -15,9 +15,13 @@ const KEYS = {
   /** @type {Map<string, CryptoKey>} */
   ckmacs: new Map(),
   /** @type {CryptoKey} */
-  ckpriv: null,
+  ckpriv0: null,
   /** @type {CryptoKey} */
-  ckpub: null,
+  ckpub0: null,
+  /** @type {CryptoKey} */
+  ckpriv1: null,
+  /** @type {CryptoKey} */
+  ckpub1: null,
 };
 
 // todo: use lfu cache
@@ -43,7 +47,7 @@ export async function sign(r, env, ctx) {
   if (!blindMsgHex) return modres.r400;
 
   const blindMsg = bin.hex2buf(blindMsgHex);
-  const ck = await rsasecrets(env);
+  const ck = await currentrsasecrets(env);
   const blindSig = await brsa.blindSign(ck[0], blindMsg);
   const blindSigHex = bin.buf2hex(blindSig);
   return new Response(blindSigHex, { ...modres.txthdr });
@@ -75,10 +79,14 @@ export async function issue(r, env, ctx) {
 
   const msg = bin.hex2buf(rsamsghex);
   const sig = bin.hex2buf(rsasighex);
-  const ck = await rsasecrets(env);
+  const ck0 = await currentrsasecrets(env);
 
-  const ok = await brsa.verify(ck[1], msg, sig);
-  if (!ok) return modres.r401;
+  const ok0 = await brsa.verify(ck0[1], msg, sig);
+  if (!ok0) {
+    const ck1 = await previousrsasecrets(env);
+    const ok1 = await brsa.verify(ck1[1], msg, sig);
+    if (!ok1) return modres.r401;
+  }
 
   const sk = await macsecret(env);
   if (!seed || !sk) return modres.r500;
@@ -158,36 +166,73 @@ async function macsecret(env, ctx) {
  * @returns {Promise<CryptoKey[]>}
  * @throws when rsa-pss pub/priv keys are missing
  */
+async function previousrsasecrets(env) {
+  const curprev = await rsasecrets(env);
+  return curprev[1];
+}
+
+/**
+ * @param {any} env
+ * @returns {Promise<CryptoKey[]>}
+ * @throws when rsa-pss pub/priv keys are missing
+ */
+async function currentrsasecrets(env) {
+  const curprev = await rsasecrets(env);
+  return curprev[0];
+}
+
+/**
+ * @param {any} env
+ * @returns {Promise<Array<CryptoKey[]>>}
+ * @throws when rsa-pss pub/priv keys are missing
+ */
 async function rsasecrets(env) {
-  if (KEYS.ckpriv != null || KEYS.ckpub != null) {
-    return [KEYS.ckpriv, KEYS.ckpub];
+  // todo: should not be cached for more than 3 days
+  if (
+    KEYS.ckpriv0 != null &&
+    KEYS.ckpub0 != null &&
+    KEYS.ckpriv1 != null &&
+    KEYS.ckpub1 != null
+  ) {
+    const latest = [KEYS.ckpriv0, KEYS.ckpub0];
+    const previous = [KEYS.ckpriv1, KEYS.ckpub1];
+    return [latest, previous];
   }
   // see: redir's rsapubkey fn
   const privprefix = cfg.wenvBlindRsaPrivateKeyPrefix;
   const pubprefix = cfg.wenvBlindRsaPublicKeyPrefix;
   // default key name
-  let kpriv = privprefix + "A";
-  let kpub = pubprefix + "A";
-  let max = Number.MIN_SAFE_INTEGER;
-  for (const k of Object.keys(env)) {
-    if (k.startsWith(privprefix)) {
-      const timestamp = k.slice(privprefix.length);
-      // convert timestamp to number
-      const t = parseInt(timestamp);
-      if (t > max) {
-        kpriv = k;
-        kpub = pubprefix + timestamp;
-        max = t;
-      }
-    }
+  let kpriv0 = privprefix + "A";
+  let kpub0 = pubprefix + "A";
+  let kpriv1 = privprefix + "B";
+  let kpub1 = pubprefix + "B";
+  const descend = Object.keys(env)
+    .filter((k) => k.startsWith(privprefix))
+    .sort((a, b) => {
+      const l = parseInt(a.slice(privprefix.length));
+      const r = parseInt(b.slice(privprefix.length));
+      return r - l;
+    });
+  if (descend.length > 0) {
+    kpriv0 = privprefix + descend[0];
+    kpub0 = pubprefix + descend[0];
   }
-  const privjwkstr = env[kpriv];
-  const pubjwkstr = env[kpub];
+  if (descend.length > 1) {
+    kpriv1 = privprefix + descend[1];
+    kpub1 = pubprefix + descend[1];
+  }
+  const privjwkstr0 = env[kpriv0];
+  const pubjwkstr0 = env[kpub0];
+  const privjwkstr1 = env[kpriv1];
+  const pubjwkstr1 = env[kpub1];
+  const cks0 = await krsa.importkey(privjwkstr0, pubjwkstr0);
+  const cks1 = await krsa.importkey(privjwkstr1, pubjwkstr1);
 
-  const cks = await krsa.importkey(privjwkstr, pubjwkstr);
-  KEYS.ckpriv = cks[0];
-  KEYS.ckpub = cks[1];
-  return cks;
+  KEYS.ckpriv0 = cks0[0];
+  KEYS.ckpub0 = cks0[1];
+  KEYS.ckpriv1 = cks1[0];
+  KEYS.ckpub1 = cks1[1];
+  return [cks0, cks1];
 }
 
 /**

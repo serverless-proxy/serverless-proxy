@@ -30,7 +30,7 @@ jobs:
 
       # ref: github.com/cloudflare/wrangler-action/blob/master/entrypoint.sh
       - name: 🚨 Prod?
-        if: github.event.inputs.environment == 'prod'
+        if: github.event.inputs.environment == 'prod' || github.event.schedule == '53 12 2 * *'
         run: node ./src/node/prodkeys.js
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
