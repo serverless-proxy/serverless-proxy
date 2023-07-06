@@ -4,7 +4,15 @@ on:
     # at 12:53 on 2nd of every month: crontab.guru/#53_12_2_*_*
     - cron: '53 12 2 * *'
   workflow_dispatch:
-    # allow manual runs
+    inputs:
+      environment:
+        description: 'wrangler env to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+        - dev
+        - prod
 
 jobs:
   deploy:
@@ -12,17 +20,25 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Node
+      - name: 🚚 Node
         uses: actions/setup-node@v3
         with:
           node-version: '20.x'
 
       - name: 🏗 Wrangler
-        run: npm i -g wrangler
+        run: npm i wrangler@3 -g
 
       # ref: github.com/cloudflare/wrangler-action/blob/master/entrypoint.sh
-      - name: 📚 Exec
+      - name: 🚨 Prod?
+        if: github.event.inputs.environment == 'prod'
         run: node ./src/node/prodkeys.js
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+
+      - name: 📚 Dev?
+        if: github.event.inputs.environment == 'dev'
+        run: node ./src/node/devkeys.js
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
