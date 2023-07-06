@@ -3,6 +3,7 @@
 
 import * as cfg from "../base/cfg.js";
 import * as fs from "node:fs";
+import { spawnSync } from "node:child_process";
 import * as brsa from "../webcrypto/blindrsa.js";
 import * as bin from "../base/buf.js";
 import { rand } from "../webcrypto/hmac.js";
