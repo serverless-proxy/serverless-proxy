@@ -15,11 +15,17 @@ on:
         - prod
 
 jobs:
-  deploy:
-    name: 🏇 Deploy
+  secrets:
+    name: 🏇 Secrets
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: 🛸 Checkout
+        uses: actions/checkout@v3.3.0
+        with:
+          ref: ${{ env.GIT_REF }}
+          fetch-depth: 0
+
       - name: 🚚 Node
         uses: actions/setup-node@v3
         with:
