@@ -1,8 +1,8 @@
 name: ⛅ Keys
 on:
   schedule:
-    # at 12:53 on 2nd of every month: crontab.guru/#53_12_2_*_*
-    - cron: '53 12 2 * *'
+    # at 12:53 on 2nd of Feb, June, Oct: crontab.guru/#53_12_2_2,6,10_*
+    - cron: '53 12 2 2,6,10 *'
   workflow_dispatch:
     inputs:
       environment:
@@ -36,7 +36,7 @@ jobs:
 
       # ref: github.com/cloudflare/wrangler-action/blob/master/entrypoint.sh
       - name: 🚨 Prod?
-        if: github.event.inputs.environment == 'prod' || github.event.schedule == '53 12 2 * *'
+        if: github.event.inputs.environment == 'prod' || github.event.schedule == '53 12 2 2,6,10 *'
         run: node ./src/node/prodkeys.js
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
