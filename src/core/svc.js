@@ -22,7 +22,8 @@ export function intent(u) {
   }
 
   const w = p[1];
-  let dst = p[2];
+  // const sig = p[2];
+  let dst = p[3];
   if (w === "yo") {
     dst = dst || cfg.g204Url;
   } else if (!dst) {
@@ -30,7 +31,6 @@ export function intent(u) {
     return ["", null];
   }
 
-  // const sig = p[3];
   const dstport = p[4];
   const proto = p[5];
   if (!dstport || !proto) {
