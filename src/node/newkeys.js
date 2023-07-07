@@ -16,7 +16,7 @@ const pskfs = "svcpsk.json";
 const prodsvc = "svc";
 const prodpx = "ken";
 const notprodsvc = "redir";
-const notprodpx = "redir";
+const notprodpx = "proxy";
 
 export async function saveRsaKey() {
   const x = await brsa.genkey();
