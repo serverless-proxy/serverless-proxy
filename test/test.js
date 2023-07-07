@@ -7,7 +7,7 @@ const enc = new TextEncoder();
 const dec = new TextDecoder();
 
 test(proxybase, "echo");
-test(proxybase, "h2/midway.fly.dev/5001");
+test(proxybase, "h2/nosig/midway.fly.dev/5001");
 
 // also: echo "POSTBODY" | nc midway.fly.dev 5001
 async function test(url, path) {

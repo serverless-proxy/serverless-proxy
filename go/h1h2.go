@@ -27,13 +27,13 @@ func main() {
 	var tunnel net.Conn
 	var err error
 
-	url := "https://proxy.nile.workers.dev/h2/midway.fly.dev/5001"
+	url := "https://proxy.nile.workers.dev/h2/nosig/midway.fly.dev/5001"
 
 	switch testproto {
 	case "h3":
 		tunnel, err = fetch(ctx, h3client, url)
 	case "ws":
-		url = "wss://proxy.nile.workers.dev/ws/midway.fly.dev/5001"
+		url = "wss://proxy.nile.workers.dev/ws/nosig/midway.fly.dev/5001"
 		tunnel, err = dialws(ctx, h1client, url)
 	case "h1":
 		log.Printf("h1")
