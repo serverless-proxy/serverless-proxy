@@ -11,7 +11,8 @@ const notprod = false;
     await k.savePskSvc();
 
     await k.setRsaWranglerSecrets(notprod);
-    await k.setPskWranglerSecrets(notprod);
+    await k.deleteOlderRsaWranglerSecrets(notprod, maxkeys);
+    await k.setPskWranglerSecret(notprod);
   } catch (ex) {
     console.error(ex);
     process.exit(1);

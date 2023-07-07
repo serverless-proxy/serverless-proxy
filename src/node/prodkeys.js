@@ -4,6 +4,7 @@
 import * as k from "./newkeys.js";
 
 const prod = true;
+const maxkeys = 3;
 (async (main) => {
   console.log("gen keys for prod!");
   try {
@@ -11,7 +12,8 @@ const prod = true;
     await k.savePskSvc();
 
     await k.setRsaWranglerSecrets(prod);
-    await k.setPskWranglerSecrets(prod);
+    await k.deleteOlderRsaWranglerSecrets(prod, maxkeys);
+    await k.setPskWranglerSecret(prod);
   } catch (ex) {
     console.error(ex);
     process.exit(1);
