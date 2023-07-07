@@ -71,12 +71,11 @@ export async function setRsaWranglerSecrets(prod = false) {
 
 export async function deleteOlderRsaWranglerSecrets(
   prod = false,
-  max = 3,
-  min = 2
+  keep = 3
 ) {
-  if (min < 1) {
-    console.warn("min keys cannot be less than 1");
-    min = 1;
+  if (keep < 1) {
+    console.warn("keep min 1 key");
+    keep = 1;
   }
   // wrangler secret list --env <ENVIRONMENT> --name <WORKER-NAME>
   /*[{
@@ -106,7 +105,8 @@ export async function deleteOlderRsaWranglerSecrets(
   const y = x
     .filter((e) => e.name.startsWith(privprefix))
     .map((e) => e.name.slice(privprefix.length));
-  if (y.length <= max) {
+  if (keep >= y.length) {
+    console.warn(`more keys to del than total: ${keep} >= ${y.length}`);
     return;
   }
   const ascend = y.sort((a, b) => {
@@ -114,15 +114,14 @@ export async function deleteOlderRsaWranglerSecrets(
     const r = parseInt(b);
     return l - r;
   });
-  if (max > ascend.length) {
-    max = ascend.length;
+  if (keep >= ascend.length) {
+    console.warn(`more keys to del than total: ${keep} >= ${ascend.length}`);
+    return;
   }
-  let del = ascend.slice(0, max);
-  const rem = del.length + min - ascend.length;
-  if (rem < 0) {
-    del = del.slice(0, rem);
-    const l = del.length;
-    console.warn(`can't del ${max} keys, need atleast ${min}; new size ${l}`);
+  const del = ascend.slice(0, -keep);
+  if (del.length < 1) {
+    console.warn("no keys to delete");
+    return;
   }
   // wrangler secret delete <KEY> --env <ENVIRONMENT> --name <WORKER-NAME>
   for (const e of del) {
