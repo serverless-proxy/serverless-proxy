@@ -169,6 +169,7 @@ function chain(websocket, reader, bw) {
   // developer.mozilla.org/en-US/docs/Web/API/WebSocket/close_event
   websocket.addEventListener("close", (why) => {
     const { code, reason, wasClean } = why;
+    endlog(bw);
     log.d("ws: close", code, reason, "clean?", wasClean);
     // already done: close(websocket, code, reason, bw);
     reader.close();
@@ -201,11 +202,18 @@ function wsok(websocket) {
 function close(websocket, code = 1000, why = "ok", bw) {
   // developers.cloudflare.com/workers/runtime-apis/websockets/#close
   // developer.mozilla.org/en-US/docs/Web/API/CloseEvent/code
+  endlog(bw);
+  websocket.close(code, why);
+}
+
+/**
+ * @param {BandwidthStats} bw
+ */
+function endlog(bw) {
   const dur = (((Date.now() - bw.p) / 1000) | 0) + "s";
   const rx = (bw.rx / 1024).toFixed(3) + "kb";
   const tx = (bw.tx / 1024).toFixed(3) + "kb";
   log.d("ws: close", code, why, "rx/tx/p", rx, tx, dur);
-  websocket.close(code, why);
 }
 
 function len(arraylike) {
