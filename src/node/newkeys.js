@@ -106,7 +106,7 @@ export async function deleteOlderRsaWranglerSecrets(
     .filter((e) => e.name.startsWith(privprefix))
     .map((e) => e.name.slice(privprefix.length));
   if (keep >= y.length) {
-    console.warn(`more keys to del than total: ${keep} >= ${y.length}`);
+    console.warn(`more keys to del than total0: ${keep} >= ${y.length}`);
     return;
   }
   const ascend = y.sort((a, b) => {
@@ -115,7 +115,7 @@ export async function deleteOlderRsaWranglerSecrets(
     return l - r;
   });
   if (keep >= ascend.length) {
-    console.warn(`more keys to del than total: ${keep} >= ${ascend.length}`);
+    console.warn(`more keys to del than total1: ${keep} >= ${ascend.length}`);
     return;
   }
   const del = ascend.slice(0, -keep);
@@ -143,10 +143,11 @@ export async function deleteOlderRsaWranglerSecrets(
 export async function setPskWranglerSecret(prod) {
   // wrangler secret:bulk <JSON> --env <ENVIRONMENT> --name <WORKER-NAME>
   const cmd = "wrangler";
-  const args0 = ["secret:bulk", filepath(pskfs)];
+  const nom0 = prod ? prodpx : notprodpx;
+  const args0 = ["secret:bulk", filepath(pskfs), "--name", nom0];
   const ok0 = sh(cmd, args0);
   if (!ok0) {
-    throw new Error("sproxy: wrangler psk secret put failed");
+    throw new Error("sproxy: wrangler psk secret:bulk failed");
   }
   // store public key with worker, svc
   // or: wrangler secret put <KEY> --env <ENVIRONMENT> --name <WORKER-NAME>
@@ -154,13 +155,13 @@ export async function setPskWranglerSecret(prod) {
   const args1 = ["secret:bulk", filepath(pskfs), "--name", nom1];
   const ok1 = sh(cmd, args1);
   if (!ok1) {
-    throw new Error("svc: wrangler psk secret put failed");
+    throw new Error("svc: wrangler psk secret:bulk failed");
   }
 }
 
 function sh(cmd, args) {
   const [ok, out] = shout(cmd, args);
-  if (!ok) console.error(cmd, args, opts, "error", out);
+  if (!ok) console.error(cmd, args, "error", out);
   else console.debug(out);
   return ok;
 }
