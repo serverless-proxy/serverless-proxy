@@ -49,8 +49,7 @@ export async function setRsaWranglerSecrets(prod = false) {
   const args0 = ["secret:bulk", filepath(rsafs), "--name", nom0];
   const ok = sh(cmd, args0);
   if (!ok) {
-    const ex = "wrangler rsa secret put failed";
-    throw new Error(ex);
+    throw new Error("wrangler rsa secret:bulk failed for " + nom0);
   }
 
   // store public key with worker, svc
@@ -65,7 +64,7 @@ export async function setRsaWranglerSecrets(prod = false) {
   const args1 = ["secret:bulk", filepath(pubfs), "--name", nom1];
   const ok1 = sh(cmd, args1);
   if (!ok1) {
-    throw new Error("svc: wrangler psk secret put failed");
+    throw new Error("wrangler rsa secret:bulk failed for " + nom1);
   }
 }
 
@@ -95,7 +94,7 @@ export async function deleteOlderRsaWranglerSecrets(
   const args = ["secret", "list", "--name", nom];
   const [ok, out] = shout(cmd, args);
   if (!ok || !out) {
-    const err = "wrangler secret list failed";
+    const err = "wrangler secret list failed for " + nom;
     console.error(err, "output", out);
     throw new Error(err);
   }
@@ -133,7 +132,7 @@ export async function deleteOlderRsaWranglerSecrets(
     const argspk0 = ["secret", "delete", pk, "--name", nom0];
     const argspk1 = ["secret", "delete", pk, "--name", nom1];
     // cannot execute wrangler delete as it is interactive (y/n)
-    console.log("deleting", sk, pk);
+    console.log("deleting", sk, pk, "for", nom0, "&", nom1);
     shin(cmd, argssk0, "Y"); // Y/n
     shin(cmd, argspk0, "Y"); // Y/n
     shin(cmd, argspk1, "Y"); // Y/n
