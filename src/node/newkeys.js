@@ -3,12 +3,14 @@
 
 import * as cfg from "../base/cfg.js";
 import * as fs from "node:fs";
+import process from "node:process";
+import path from "node:path";
 import { spawnSync } from "node:child_process";
 import * as brsa from "../webcrypto/blindrsa.js";
 import * as bin from "../base/buf.js";
 import { rand } from "../webcrypto/hmac.js";
 
-const jfs = "rsakeys.json";
+const rsafs = "rsakeys.json";
 const pskfs = "svcpsk.json";
 
 export async function saveRsaKey() {
@@ -19,21 +21,21 @@ export async function saveRsaKey() {
   const skname = cfg.wenvBlindRsaPrivateKeyPrefix + t;
   const pkname = cfg.wenvBlindRsaPublicKeyPrefix + t;
   const json = { [skname]: privstr, [pkname]: pubstr };
-  fs.writeFileSync(jfs, JSON.stringify(json, null, 2));
+  fs.writeFileSync(filepath(rsafs), JSON.stringify(json, null, 2));
 }
 
 export async function savePskSvc() {
   const x = rand(64);
   const hex = bin.buf2hex(x);
   const pskname = cfg.wenvPskSvc;
-  fs.writeFileSync(pskfs, JSON.stringify({ [pskname]: hex }, null, 2));
+  fs.writeFileSync(filepath(pskfs), JSON.stringify({ [pskname]: hex }, null, 2));
 }
 
 export async function setRsaWranglerSecrets(prod) {
   // developers.cloudflare.com/workers/wrangler/commands/#secretbulk
   // wrangler secret:bulk <JSON> --env <ENVIRONMENT> --name <WORKER-NAME>
   const cmd = "wrangler";
-  const args0 = ["secret:bulk", jfs];
+  const args0 = ["secret:bulk", filepath(rsafs)];
   if (prod) {
     args0.push("--name");
     args0.push("ken");
@@ -48,7 +50,7 @@ export async function setRsaWranglerSecrets(prod) {
   }
 
   // store public key with worker, svc
-  const x = JSON.parse(fs.readFileSync("rsakeys.json"));
+  const x = JSON.parse(fs.readFileSync(filepath(rsafs)));
   const pkname = Object.keys(x)[1];
   const pk = x[pkname];
   // developers.cloudflare.com/workers/wrangler/commands/#put-3
@@ -70,14 +72,14 @@ export async function setRsaWranglerSecrets(prod) {
 export async function setPskWranglerSecrets(prod) {
   // wrangler secret:bulk <JSON> --env <ENVIRONMENT> --name <WORKER-NAME>
   const cmd = "wrangler";
-  const args0 = ["secret:bulk", pskfs];
+  const args0 = ["secret:bulk", filepath(pskfs)];
   const ok0 = sh(cmd, args0);
   if (!ok0) {
     throw new Error("sproxy: wrangler psk secret put failed");
   }
   // store public key with worker, svc
   // or: wrangler secret put <KEY> --env <ENVIRONMENT> --name <WORKER-NAME>
-  const args1 = ["secret:bulk", pskfs];
+  const args1 = ["secret:bulk", filepath(pskfs)];
   if (prod) {
     args1.push("--name");
     args1.push("svc");
@@ -104,4 +106,9 @@ function sh(cmd, args) {
   if (proc.stderr) console.error(cmd, args, opts, proc.stderr);
   if (proc.stdout) console.log(proc.stdout);
   return proc.status === 0;
+}
+
+function filepath(f) {
+  if (typeof f !== "string" || !f) throw new Error("filepath: invalid arg");
+  return path.join(process.cwd(), f);
 }
