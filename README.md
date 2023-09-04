@@ -15,6 +15,8 @@ The URL for *h2* (HTTP2) and *ws* (WebSockets) full-duplex tunnels to connect to
 In terms of server code, the flow is: source (h2 / ws) <-> `src/server-[workers|deno].js` <-> [`svc.js`](src/base/svc.js) <->
 [`auth.js`](src/base/auth.js) <-> [`h2.js`](src/proxifier/h2.js) / [`ws.js`](src/proxifier/ws.js) <-> destination
 
+The design of this proxy is similar to (but not compliant with) probe-resistant [httpt](https://github.com/sergeyfrolov/httpt).
+
 ## Development
 
 ```bash
