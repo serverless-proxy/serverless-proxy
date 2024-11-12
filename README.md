@@ -53,7 +53,7 @@ working full-time on a suite of open source tools to help people reclaim their p
 - We're also kind of active on the bird app, mostly nerd-sniping other engs or shit-posting about our tech stack: [twitter/rethinkdns](https://twitter.com/rethinkdns).
 
 ### Sponsors
-[<img src="http://fossunited.org/files/fossunited-badge.svg"
+[<img src="https://fossunited.org/files/fossunited-white.svg"
      alt="FOSS United"
      height="40">](https://fossunited.org/grants)&emsp;
 
